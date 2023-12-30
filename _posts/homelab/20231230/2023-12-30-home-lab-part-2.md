@@ -11,7 +11,7 @@ This guide is part 2 of a 3 part series for setting up a virtualised home lab wi
 
 In this part, we will be setting up the VLANs for the components we configured in part [one]({% post_url 2023-12-27-home-lab-part-1 %}).
 
-Virtual Local Area Network(VLAN) allow us to create logical networks on top of a physical one. This would allow us to segregate the the hosts in and only host within the same VLAN can talk to each other.
+Virtual Local Area Network(VLAN) allow us to create logical networks on top of a physical one. This would allow only hosts within the same VLAN to talk to each other. For hosts to communicate cross VLAN, a router would be required.
 
 `Lab Private` switch will be connecting all VLANs and the firewall together. The VMs will be sitting in two different VLANs. Thus, we need to setup 2 VLANs. 
 

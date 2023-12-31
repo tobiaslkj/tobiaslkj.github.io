@@ -169,6 +169,6 @@ Let us test if the VLANs and the DHCP service is working. Go to each VM and star
 
 If we try to access the web configurator from the client `Windows 10 (vlan20)`, we would not able to access the web configurator as there are no firewall rules that allows it.
 
-Now that we have configured both our VLANs. In the last part, we will configure our pfsense firewall such that there is Internet access for clients in VLAN 10, but not for the clients in VLAN20. We will also add additional rules such that the only network	 VLAN 20 can reach is VLAN 10.
+Now that we have configured both our VLANs. In the last part, we will configure our pfsense firewall such that clients in VLAN 10 are able to access the internet, but not for the clients in VLAN20. 
 
 See you in the next part!

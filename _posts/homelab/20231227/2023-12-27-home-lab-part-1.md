@@ -23,18 +23,27 @@ This guide is part 1 of 3 for setting up a virtualised home lab with Hyper-V.
 
 For going through this lab, I would recommended to have at least 8 virtual cores, 16GB RAM and 50GB disk storage.
 
+## Why?
+A virtualised home lab would be useful in the event that one need to download vulnerable images for practicing pentest skills. At the same time provide a level of isolation for the vulnerable images. We can choose to use cloud technologies for this but it would incur some costs. Thus, setting up in a virtualised home lab environment would help to save some of the costs incurred.
+
 ## The idea
-The objective of this setup is to isolate the virtual machines created in our lab from our host. We will only allow HTTP traffic to leave the network isolated network. In the event of a malware infection, we want to reduce the chance of worms propagating from our VMs to our host. However, this setup would not block be able to block a malware communicating back to the C2 server via HTTP/HTTPS (yet). But we can add an additional controls to reduce the risk of it happening. 
+The objective of this setup is to isolate the virtual machines created in our lab from our host. We will only allow web traffic to leave the network isolated network. In the event of a malware infection, we want to reduce the chance of worms propagating from our VMs to our host. However, this setup would not block be able to block a malware communicating back to the C2 server via HTTP/HTTPS (yet). But we can add additional controls to reduce the risk of it happening. 
 
 So now let us first take a look at the end state of our network.
 ![Desktop View](/images/homelab/5016ab07-d76f-437f-9f72-6044240972f4.png)
 
 This would allow us to:
-- Add additional vlan
-- Add additional VMs into a vlan
-- Configure routing between the vlan
+- Add additional VLANs
+- Add additional VMs into a VLAN
+- Allow/Deny traffic between the VLANs
 - Internal machines are able to access the internet
 - Blocking of ingress/egress traffic using the pfSense firewall
+
+A short explanation for the above setup:
+- `192.168.10.0/24` network is a trusted network. We can put our VMs such as a kali/parrot box here.
+- `192.168.20.0/24` network is a "sandbox" network and untrusted. We can put VMs downloaded from Vulnhub here. This network will be restricted to access any networks.
+- `10.0.0.0/24` is the network connecting the WAN interface of our firewall and the management host.
+- `192.168.100.0/24` is the local network of the management host. This network should be able to access internet.
 
 ## The components
 We will be creating the virtual components

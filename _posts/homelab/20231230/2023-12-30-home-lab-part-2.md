@@ -5,23 +5,34 @@ categories: [homelab]
 tags: [hyper-v, pfsense]
 ---
 
-# Part 2 of 3 - Configuring pfSense for VLANs
+# Part 2 of 3 - VLAN Configuration
 
 This guide is part 2 of a 3 part series for setting up a virtualised home lab with Hyper-V.
 
-In this part, we will be setting up the VLANs for the components we configured in part [one]({% post_url 2023-12-27-home-lab-part-1 %}).
+In this part, we will be covering the following:
+- Creating VLANs in pfsense
+- Configuring DHCP Service for VLAN
+- Allowing access from VLAN10 to webconfigurator
+- Configuring Hyper-V for VLANs assignment
 
-Virtual Local Area Network(VLAN) allow us to create logical networks on top of a physical one. This would allow only hosts within the same VLAN to talk to each other. For hosts to communicate cross VLAN, a router would be required.
 
-`Lab Private` switch will be connecting all VLANs and the firewall together. The VMs will be sitting in two different VLANs. Thus, we need to setup 2 VLANs. 
+
+**What is VLAN?**
+
+Virtual Local Area Network(VLAN) allow us to create logical networks on top of a physical one. This would allow only hosts within the same VLAN to talk to each other. For hosts to communicate cross VLAN, a router would be required. A layer 2 switch would not be able to route traffic between networks because routing is done at the network layer (Layer 3 of OSI model). 
+
+In our lab setup, the pfsense firewall acts as a router to route traffic between networks. This include the VLANs that we will be creating in this part. VMs connected to `Lab Private` would have the interface tagged with a VLAN ID and configured to be **Access** mode. This allow the switch to send frames to only interfaces that has the same VLAN ID tagging as the frame. For the interface between the pfsense firewall and `Lab Private`, it would be configured to allow frames with any VLAN ID to be sent by setting it as a **Trunk** mode.
 
 ![Desktop View](/images/homelab/5016ab07-d76f-437f-9f72-6044240972f4.png)
 
+In our setup, 2 clients has been created to be separated into 2 different VLANs. Thus, we will set up 2 VLANs for this guide. However, you may choose to add more VLANs if needed. 
+
 ## Creating VLANs in pfsense
-To create the VLANs at pfSense, we will use pfsense GUI webconfigurator.
-1. Use any of the VM set up previously to access pfSense GUI web configurator via http://192.168.1.1. At the login page, use the following default credentials to log in: `admin:pfsense`.
-2. We can safely ignore the default password warning for now. But if you would like to change it now, do remember your password!
-3. At the dashboard, go to ***Interfaces > Assignments***. Then go to the ***VLANs*** tab and click *Add*. Use the settings below for creating the VLAN.
+To create the VLANs at pfSense, we will use pfsense's webconfigurator. Webconfigurator is the a Graphical User Inteface (GUI) to configure the pfsense firewall via web.
+1. Use any of the VM set up previously to access pfSense GUI web configurator via [https://192.168.1.1](https://192.168.1.1). 
+2. At the login page, use the following default credentials to log in: `admin:pfsense`.
+3. We can safely ignore the default password warning for now. But if you would like to change it now, do remember your password!
+4. Go to ***Interfaces > Assignments***. Select the  ***VLANs*** tab and click *Add*. Use the settings below for creating 2 VLANs	.
 
 	**VLAN 10**:
 	```
@@ -49,7 +60,7 @@ To create the VLANs at pfSense, we will use pfsense GUI webconfigurator.
 ## Configuring DHCP Service for VLANs
 Next, we will configure DHCP service to issue IP address for each VLAN. To do so, we will need to configure the VLAN interfaces and enable DHCP for each of them.
 
-For each interface OPT1 and OPT2, follow the steps below. I will use OPT1 and VLAN10 as an example.
+For each interface OPT1 and OPT2, follow the steps for both **Configuring Interface** and **Enabling DHCP Service** . I will use OPT1 and VLAN10 as an example.
 
 **Configuring Interface**
 1. Go to ***Interfaces > OPT1***
@@ -75,11 +86,12 @@ For each interface OPT1 and OPT2, follow the steps below. I will use OPT1 and VL
 5. Scroll down and click `Save`.
 6. Click `Apply Changes`.
 
-You can choose the IP range for but do take note that the first address `192.168.x.1` was used as the default interface IP address.
+> You can select a different IP range but do take note that the first address `192.168.x.1` was used as the default interface IP address.
+{: .prompt-tip }
 
-## Adding firewall rule for access to webconfigurator
+## Allowing access from VLAN10 to webconfigurator
 
-This section is not related for configuration of VLANs. But for convenience we would also need to allow one of our VLAN to be able to access the firewall for configuration. This is to prevent VMs from getting locked out once we switch our VM to use VLAN access. In this case, I will only set VLAN 10 to be able to access.
+This section is not related for configuration of VLANs. But for convenience, we would also need to allow VLAN10 to be able to access the firewall for configuration. This is to prevent VMs from getting locked out once we switch our VM's traffic to use VLAN access. 
 
 1. Go to `Firewall > Rules`. Click on OPT1 tab.
 2. Click on any of the Add button to add a firewall rule. The setting for the rule is as follows:
@@ -92,11 +104,11 @@ This section is not related for configuration of VLANs. But for convenience we w
 	```
 3. Click the `Save` button at the bottom and apply the changes.
 
-# Configuring Hyper-V for VLANs assignment
-VLAN is achieved by having a tag to each ethernet frame. Extracted from [Wikipedia](https://en.wikipedia.org/wiki/Ethernet_frame) below, we can see that there is a *802.1Q tag* with 4 octets for an optional VLAN tag. Thus, we will need to configure Hyper-V with the correct VLAN ID tagging. We would also need to set the "port" of the switch connected by the VM to be either ***Access*** or ***Trunk*** mode.
+## Configuring Hyper-V for VLANs assignment
+VLAN is achieved by having a tag to each ethernet frame. Extracted from [Wikipedia](https://en.wikipedia.org/wiki/Ethernet_frame) below, we can see that there is a *802.1Q tag* with 4 octets for an optional VLAN tag. Thus, we will configure the interface of the VM to tag ethernet frames with the correct VLAN ID. We would also set the interface mode to be either ***Access*** or ***Trunk*** mode.
 ![Desktop View](/images/homelab/a4b0869f-5bf2-4eda-9d3c-0a9e04564b60.png)
 
-## Configuring Windows 10 Client VM settings for VLAN
+### Configuring Windows 10 Client VM settings for VLAN
 Start powershell as an administrator on the management host for the next few steps.
 
 Get our VM names with the following command. Note the names of the windows client. (If you follow the previous guide, it will be  `Windows 10 (vlan10)` and `Windows 10 (vlan20)`)
@@ -125,7 +137,7 @@ For each of the windows 10 client, we will need to configure the virtual network
 
 ![Desktop View](/images/homelab/a462e143-788d-4443-a712-aa4aa38e937d.png)
 
-## Configuring pfsense VM settings for VLAN
+### Configuring pfsense VM settings for VLAN
 Next, we need to set the LAN interface of the firewall to be ***Trunk*** mode. A Trunk interface allows multiple VLAN traffic to pass through.
 
 1. Get get the network adapters of our firewall with the follow command. 
@@ -162,7 +174,7 @@ Let us test if the VLANs and the DHCP service is working. Go to each VM and star
 	**windows 10 (vlan20)**
 	![Desktop View](/images/homelab/85a7c6b6-8338-434d-a787-dc778b1d6320.png)
 
-	> Note: If you see that the Default Gateway is not set, go back to the DHCP server for each VLAN interface via ***Services > DHCP Server***  and set the ***Gateway*** under *Other DHCP Options* as the IP of the interface e.g `192.168.10.1` for OPT1 and `192.168.20.1` for OPT2. This settings tell the DHCP clients that any destination address not within the local network should be routed to the default gateway. 
+	> Note: If the Default Gateway is not set, go back to the DHCP server for each VLAN interface via ***Services > DHCP Server***  and set the ***Gateway*** under *Other DHCP Options* as the IP of the interface e.g `192.168.10.1` for OPT1 and `192.168.20.1` for OPT2. This settings tell the DHCP clients that any destination address not within the local network should be routed to the default gateway. 
 
 3. Next go to the client Windows 10 (vlan10), we will try to access the web configurator from here. Go to [https://192.168.10.1](https://192.168.10.1). You will be able to see the login page.
 ![Desktop View](/images/homelab/f54e22e5-3347-49b7-8060-229b79a04b15.png)

@@ -13,10 +13,23 @@ Let's start!
 
 ---
 
-# Part 1 of 3 - Creating the Hyper-V components
+# Part 1 of 3 - Creating and setting up the Hyper-V Components
 This series of post serves to help the future me or anyone else who would like to set up a virtualised home lab. 
 
-This guide is part 1 of 3 for setting up a virtualised home lab with Hyper-V.
+This guide consists of 3 parts to setup a virtualised home lab. The purpose of each part is shown below.
+
+- Part 1 (this) - Creating and setting up the Hyper-V Components
+- Part 2 - VLAN Configuration
+- Part 3 - Setting up Internet and allow traffic between VLANs
+
+
+In this part, we will be covering the following:
+- Why this homelab?
+- The idea
+- Creating the Hyper-V Components
+	- Creating the Hyper-V Virtual Switches
+	- Creating the Firewall VM and installation of the pfsense
+	- Creating the Client VMs  
 
 ## Prerequisites 
 - Windows 10 PC with Hyper-V Enabled
@@ -59,57 +72,70 @@ For the router/firewall, we will be using pfsense 2.7.1 (latest at the time of w
 ### Creating the Virtual Switches
 We will start by creating 1 internal and 1 private switch. 
 
-1. Launch Hyper-V Manager.
-2. Select your Hostname on the left panel. An actions panel will appear on the right of the window. 
-3. Click on ***Virtual Switch Manager*** on the right panel. In the popup window, select ***Internal*** and click on ***Create Virtual Switch***. 
-4. For the name of the switch, we will call it `Lab Internal`. Click on *Ok* to create the switch. You will see something like below once the switch has been created.
+1. Launch Hyper-V Manager as *Administrator*.
+2. On the left panel, look for *Hyper-V Manager* and select your Hostname under it. An *Actions* panel will appear on the right of the Hyper-V Manager window. 
+3. In *Actions* panel, click on ***Virtual Switch Manager***. A *Virtual Switch Manager* popup window would appear.
+4. In the *Virtual Switch Manager* popup window, under *Virtual Switches*, select ***New virtual network switch***. 
+5. The option of *Create Virtual Switch* would appear. Select ***Internal*** and click ***Create Virtual Switch***. 
+6. A switch would be created with the default name of "New Virtual Switch". We will change the name of the switch. 
+7. For the name of the switch we will call it `Lab Internal`. Ensure the connection type is set to **Internal Network**. It should look something like below.
 
 	![Desktop View](/images/homelab/dbaf3a43-941e-4293-a276-d0ea40a6b0b0.png)
-5. We will create another private switch. To do so, repeat the same step 3 and 4	. But this time, select the ***Private*** option instead. Name the switch as `Lab Private`.
-6. Ensure you have the 2 switches that you created and the settings are correct.
+8.  Click on *Apply*. 
+9. We will create another private switch. To do so, repeat the same steps 4 to 8. But this time, select the ***Private*** option instead. Name the switch as `Lab Private`.
+10. Ensure you have the 2 switches that you created and the settings are correct.
 
-![Desktop View](/images/homelab/3df67de1-6dc6-4ddc-af72-54c231ff8e49.png)
+	![Desktop View](/images/homelab/3df67de1-6dc6-4ddc-af72-54c231ff8e49.png)
+11. Click on *Ok* to close the *Virtual Switch Manager* window after you have created both switches.
 
 ### Creating the pfsense firewall
-Next, we will create the pfsense firewall. 
-1. Select ***New > Virtual Machine*** in the *Actions* panel at the right. 
-2. In the *Specify Name and Location* window, we will name it as `Firewall`. Feel free to leave the location as default unless you want to store the VM in a different location. 
-3. Use the below settings to proceed with the creation of the VM. 
+Next, we will be creating the pfsense firewall VM. 
+1. In the *Actions* panel at the right, select ***New > Virtual Machine*** . A *New Virtual Machine Wizard* window will appear. 
+2. Using the wizard, fill in the below settings to proceed with the creation of the VM . 
 
 	**Hyper-V VM Settings for pfsense firewall**
 	```
+	Name: Firewall
 	Generation: 1
-	Memory: 2048 MB
+	Startup Memory: 2048 MB
 	Connection: Not Connected
-	Create a Virtual Hard Disk > Size 10GB
-	Installation Option: Install an Operating System from a bootable image file > Browse > (Select the PFSense ISO downloaded previously)
+	Create a Virtual Hard Disk > Size: 10GB
+	Install an Operating System from a bootable CD/DVD-ROM > Image file: Select the PFSense ISO downloaded previously
 	```
-4. Once your firewall VM has been created, start the firewall by double clicking on it in the Virtual Machines list and clicking *Start* on the window appeared. 
-5. At the Welcome page, select *Install*. In the partitioning page, choose your partitioning choice. I selected Auto (ZFS). 
-6. In the Configure Options, select Install.
-7. In the page to choose a disk, use Spacebar to select the option and click enter to proceed.
+3. Review the settings in the *Summary* window and click ***Finish*** to create the VM.
+
+**Installing pfsense OS**
+
+We will power on the `Firewall` VM and install the pfsense OS.
+4. In the *Hyper-V Manager* window, double click on `Firewall` in the Virtual Machines list. The VM console window would appear.
+5. To start the VM, click on *Start* in the middle of the VM console window or select *Start* from the *Action* menu of the VM console window. 
+6. At the Welcome page, select *Install*. 
+7. In the partitioning page, choose your partitioning choice. I selected Auto (ZFS). 
+8. In the Configure Options, select Install.
+9. In the page to choose a disk, use Spacebar to select the option and click enter to proceed.
 
 	![Desktop View](/images/homelab/3de9cc97-e4a8-462e-baa3-b445c1afa4d6.png)
 
-8. Select yes and proceed with the installation. Reboot after the installation has completed.
+10. Select yes and proceed with the installation. Reboot after the installation has completed.
 
 **Adding a network interface**
 
 After the reboot, we will need to shut down the Firewall to add an extra network interface.
 
 1. In the Hyper-V manager window, turn off the firewall by right clicking on the firewall and click ***Turn Off***. 
-2. Open the settings window by right clicking on the firewall and click ***Settings***.
-3. In the popup window, select ***Add Hardware*** and in the right panel, select ***Network Adapter*** and click *Add*. 
-4. We should have 2 Network Adapter as shown below after addition of a network adapter.
+2. Open the VM settings window by right clicking on the firewall and click ***Settings***. The *Settings* popup window would appear.	
+3. In the popup window, select ***Add Hardware***. An *Add Hardware* panel would appear on the right.
+4. Select ***Network Adapter*** and click *Add*. 
+4. In the same window, under *Hardware* on the left panel, we should be able to see that we have 2 Network Adapters as shown below.	
 
 	![Desktop View](/images/homelab/33eb289e-b16d-4907-bab6-f9fe4c9be9c6.png)
 
-5. For the first Network Adaptor, set the *Virtual Switch* to ***Lab Internal***. For the second Network Adaptor, set it to ***Lab Private***.
+5. Select the first Network Adaptor by clicking on it. The *Network Adapter* options would appear on the right. Set the *Virtual Switch* to ***Lab Internal***. For the second Network Adaptor, set it to ***Lab Private***.
 
 	![Desktop View](/images/homelab/413bd471-578e-48d6-9e2e-b469aed69ac5.png)
 
 
-We will power up our firewall next, but first eject the ISO disc by selecting ***IDE Controller 1 > DVD Drive*** in the *Hardware Panel* and choose ***None*** in the Media option. Click on *Ok* to close the settings window and power up the firewall.
+We will power up our firewall next, but first we will eject the ISO disc. In the *Hardware Panel*, select ***IDE Controller 1 > DVD Drive***  and set ***None*** in the Media option. Click on *Ok* to close the settings window and power up the firewall.
 
 **Configuring the firewall**
 

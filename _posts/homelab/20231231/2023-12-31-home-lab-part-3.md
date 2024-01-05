@@ -5,7 +5,7 @@ categories: [homelab]
 tags: [hyper-v, pfsense]
 ---
 
-# Part 3 of 3 - Allowing Internet connections for specifc VLANs 
+# Part 3 of 3 - Setting up Internet and allow traffic between VLANs
 
 This guide is part 3 of a 3 part series for setting up a virtualised home lab with Hyper-V.
 
@@ -21,7 +21,9 @@ In this part, we will be covering the following:
 
 Before we start, let's allow ICMP ECHO on the Windows Defender firewall on the Windows client in VLAN20. You may choose to skip this step, but it would be difficult to troubleshoot in case you meet with any error.
 
-> If you are on a *nix based client or you have used a VM that allows ICMP ECHO from another network, you may choose to skip this part and proceed to the .
+> If you are on a *nix based client or you have used a VM that allows ICMP ECHO from another network, you may choose to skip this to [adding of firewall rules](#adding-of-firewall-rules-on-pfsense).
+{: .prompt-tip }
+
 
 ### Allowing ICMP ECHO on Windows Client
 1. On the VLAN20 windows client, go to ***Windows Defender Firewall > Advanced Settings***. 
@@ -44,13 +46,13 @@ ping -c 2 192.168.20.100
 > Do note that the IP above may be different in your case.
 
 ### Adding of firewall rules on pfsense 
-In the previous section, we did a ping test from `Firewall` to the `Windows 10 (vlan20)` client. If we try to ping `Windows 10 (vlan20)`  from our `Windows 10 (vlan10)`, we will not be able to do so. This is because there are no rules in  `Firewall` currently to allow network traffic in/out for both VLAN10 and VLAN20. (With the exception of the rule we created in part 2 to allow VLAN10 to access web configurator.)
+In the previous section, we did a ping test from `Firewall` to the `Windows 10 (vlan20)` client. If we try to ping `Windows 10 (vlan20)`  from our `Windows 10 (vlan10)`, we will not be able to do so. This is because there are no rules in  `Firewall` currently allow network traffic in/out for both VLAN10 and VLAN20. (With the exception of the rule we created in part 2 to allow VLAN10 to access web configurator.)
 
 VLAN10 Client pinging VLAN20	
 
 ![Desktop View](/images/homelab/fce06b3e-383c-43dc-ad1e-8673df88962b.png)
 
-Thus, we will now create a rule to allow any clients in VLAN10 to ping VLAN20. 
+Thus, we will now create a rule to allow any clients in VLAN10 to send any ICMP traffic to clients in VLAN20. 
 1. Access web configurator from `Windows 10 (vlan10)` and go to ***Firewall > Rules > OPT1***. 
 2. Click on any of the ***Add*** button to add a rule with the following settings.
 	```
@@ -65,7 +67,7 @@ Thus, we will now create a rule to allow any clients in VLAN10 to ping VLAN20.
 4. Now go back to `Windows 10 (vlan20)`, we will issue the ping command again. We are able to ping the client in VLAN20 now.
 
 	![Desktop View](/images/homelab/1809825b-b57c-4dd4-af3b-98a0a954a3f6.png)
-5. For allowing HTTP/HTTPS traffic from VLAN10 to VLAN20, it will be covered in the [next section](#adding-firewall-rules-to-allow-clients-in-specific-vlans-vlan-10-to-access-the-internet)
+5. For allowing of HTTP/HTTPS traffic from VLAN10 to VLAN20, it will be covered in the [later section](#adding-firewall-rules-to-allow-clients-in-specific-vlans-vlan-10-to-access-the-internet)
 
 
 ## Configuring NAT on our management host to translate internal traffic 
@@ -74,6 +76,7 @@ Let us do a stocktake of what we have did so far. Referencing the network diagra
 
 ![Desktop View](/images/homelab/5016ab07-d76f-437f-9f72-6044240972f4.png)
 > For the network `192.168.100.0/24` network, it is the home network of our management host
+{: .prompt-tip }
 
 
 As you can see, we have not configured the `10.0.0.0/24` network between the firewall and management host. So we will start with this step.
@@ -155,8 +158,12 @@ To do so, we will add 1 alias and 2 rules to allow HTTP/HTTPS to anywhere and DN
 	Destination: Any
 	Destination Port Range: Fill in `web_traffic` in the first `Custom` text field
 	```
-	> Note: As we are allowing web traffic to OPT2 network, the above rule would also allow web traffic to OPT2 network. Do also note that this rule would allow HTTP traffic to `Firewall` and any traffic reachable by the management OS.  Since this rule allows web traffic to `Firewall`, we can also delete the previously created rule for accessing the webconfigurator by clicking on the trash icon on the right.
-![Desktop View](/images/homelab/cf823e15-9351-4ee0-a2da-86a5a4c5f695.png) 
+	> Do also note that this rule would allow HTTP traffic to `Firewall` and any network/host reachable by the management OS.
+	{: .prompt-warning }
+	> As we are allowing web traffic to OPT2 network, the above rule would also allow web traffic to OPT2 network. Since this rule allows web traffic to `Firewall`, we can also delete the previously created rule for accessing the webconfigurator by clicking on the trash icon on the right.
+	![Desktop View](/images/homelab/cf823e15-9351-4ee0-a2da-86a5a4c5f695.png) 
+	{: .prompt-tip }
+	
 5. Click on **Save** to save to add the rule.
 6. Click any of the **Add** button to add a firewall rule with the following settings to allow DNS traffic to `Firewall`.
 	```
